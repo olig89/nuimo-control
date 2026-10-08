@@ -1,0 +1,7 @@
+{
+  "services": {
+    "show": {
+      "service": "mdi:led-on"
+    }
+  }
+}

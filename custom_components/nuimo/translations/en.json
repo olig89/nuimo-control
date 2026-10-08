@@ -1,0 +1,136 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "bluetooth_confirm": {
+        "description": "Add {name}?"
+      },
+      "user": {
+        "title": "Add a Nuimo Control",
+        "description": "Enter the Nuimo's Bluetooth address. Usually you won't need this: Home Assistant finds a Nuimo by itself when it's nearby and awake.",
+        "data": {
+          "address": "Bluetooth address"
+        }
+      }
+    },
+    "error": {
+      "invalid_address": "That isn't a Bluetooth address (it looks like AA:BB:CC:DD:EE:FF).",
+      "not_found": "No Nuimo with that address is in range. Wake it up and bring it closer to a Bluetooth adapter or proxy."
+    },
+    "abort": {
+      "already_configured": "This Nuimo is already added."
+    }
+  },
+  "entity": {
+    "event": {
+      "gesture": {
+        "name": "Button",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "press": "Press",
+              "release": "Release",
+              "rotate": "Rotate",
+              "swipe_left": "Swipe left",
+              "swipe_right": "Swipe right",
+              "swipe_up": "Swipe up",
+              "swipe_down": "Swipe down",
+              "touch_left": "Touch left",
+              "touch_right": "Touch right",
+              "touch_top": "Touch top",
+              "touch_bottom": "Touch bottom",
+              "long_touch_left": "Long touch left",
+              "long_touch_right": "Long touch right",
+              "long_touch_top": "Long touch top",
+              "long_touch_bottom": "Long touch bottom",
+              "fly_left": "Wave left",
+              "fly_right": "Wave right",
+              "proximity": "Hand above"
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "one_picture": {
+      "message": "Give exactly one of icon, matrix, number or level (got: {given})."
+    },
+    "bad_picture": {
+      "message": "That picture can't be shown: {error}"
+    },
+    "not_a_nuimo": {
+      "message": "Device {device_id} isn't a Nuimo that's set up."
+    },
+    "not_connected": {
+      "message": "The Nuimo ({address}) isn't connected right now. Touch it to wake it."
+    }
+  },
+  "selector": {
+    "icon": {
+      "options": {
+        "blank": "Blank",
+        "bulb": "Bulb",
+        "check": "Tick",
+        "cross": "Cross",
+        "dot": "Dot",
+        "down": "Arrow down",
+        "full": "All on",
+        "heart": "Heart",
+        "left": "Arrow left",
+        "minus": "Minus",
+        "moon": "Moon",
+        "music": "Music",
+        "next": "Next",
+        "pause": "Pause",
+        "play": "Play",
+        "plus": "Plus",
+        "power": "Power",
+        "previous": "Previous",
+        "right": "Arrow right",
+        "sun": "Sun",
+        "up": "Arrow up"
+      }
+    }
+  },
+  "services": {
+    "show": {
+      "name": "Show on the Nuimo",
+      "description": "Lights up the Nuimo's 9×9 LEDs with an icon, your own picture, a number or a level bar.",
+      "fields": {
+        "device_id": {
+          "name": "Nuimo",
+          "description": "Which Nuimo(s) to draw on."
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "A built-in picture. Use one of icon, picture, number or level."
+        },
+        "matrix": {
+          "name": "Picture",
+          "description": "Nine rows of nine characters: . or space is off, anything else is on."
+        },
+        "number": {
+          "name": "Number",
+          "description": "Show a number from 0 to 99."
+        },
+        "level": {
+          "name": "Level",
+          "description": "A bar filling from the bottom, e.g. a light's brightness."
+        },
+        "brightness": {
+          "name": "Brightness",
+          "description": "How bright the LEDs are."
+        },
+        "duration": {
+          "name": "Show for",
+          "description": "How long the picture stays on (up to 25.5 seconds)."
+        },
+        "fade": {
+          "name": "Fade",
+          "description": "Fade from the previous picture instead of switching at once."
+        }
+      }
+    }
+  }
+}
