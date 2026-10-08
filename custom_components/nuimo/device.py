@@ -152,10 +152,14 @@ class NuimoDevice:
             max_attempts=3,
         )
         self._client = client
-        await client.start_notify(protocol.BUTTON, self._on_button)
-        await client.start_notify(protocol.TOUCH, self._on_touch)
-        await client.start_notify(protocol.ROTATION, self._on_rotation)
-        await client.start_notify(protocol.FLY, self._on_fly)
+        for uuid, handler in (
+            (protocol.BUTTON, self._on_button),
+            (protocol.TOUCH, self._on_touch),
+            (protocol.ROTATION, self._on_rotation),
+            (protocol.FLY, self._on_fly),
+        ):
+            await client.start_notify(uuid, handler)
+            _LOGGER.debug("Nuimo %s: notifications on for %s", self.address, uuid)
         try:
             await client.start_notify(protocol.BATTERY_LEVEL, self._on_battery)
         except Exception:  # noqa: BLE001 - not every firmware notifies; read instead
@@ -199,21 +203,25 @@ class NuimoDevice:
 
     @callback
     def _on_button(self, _char: Any, data: bytearray) -> None:
+        _LOGGER.debug("Nuimo %s: button %s", self.address, bytes(data).hex())
         if gesture := protocol.decode_button(data):
             self._emit(gesture.name)
 
     @callback
     def _on_touch(self, _char: Any, data: bytearray) -> None:
+        _LOGGER.debug("Nuimo %s: touch %s", self.address, bytes(data).hex())
         if gesture := protocol.decode_touch(data):
             self._emit(gesture.name)
 
     @callback
     def _on_fly(self, _char: Any, data: bytearray) -> None:
+        _LOGGER.debug("Nuimo %s: fly %s", self.address, bytes(data).hex())
         if gesture := protocol.decode_fly(data):
             self._emit(gesture.name, gesture.data)
 
     @callback
     def _on_rotation(self, _char: Any, data: bytearray) -> None:
+        _LOGGER.debug("Nuimo %s: rotation %s", self.address, bytes(data).hex())
         steps = protocol.decode_rotation(data)
         if steps is None:
             return
@@ -228,6 +236,7 @@ class NuimoDevice:
 
     @callback
     def _on_battery(self, _char: Any, data: bytearray) -> None:
+        _LOGGER.debug("Nuimo %s: battery %s", self.address, bytes(data).hex())
         self._set_battery(protocol.decode_battery(data))
 
     @callback

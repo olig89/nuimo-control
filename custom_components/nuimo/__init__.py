@@ -77,14 +77,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         devices: list[NuimoDevice] = []
         for device_id in call.data[ATTR_DEVICE_ID]:
             device = registry.async_get(device_id)
-            entry = next(
-                (
-                    e
-                    for e in (hass.config_entries.async_get_entry(i) for i in (device.config_entries if device else ()))
-                    if e and e.domain == DOMAIN
-                ),
-                None,
-            )
+            entry = hass.config_entries.async_get_entry(device.config_entry_id) if device else None
+            if entry is not None and entry.domain != DOMAIN:
+                entry = None
             if entry is None or entry.state is not ConfigEntryState.LOADED:
                 raise ServiceValidationError(
                     translation_domain=DOMAIN, translation_key="not_a_nuimo", translation_placeholders={"device_id": device_id}
