@@ -16,13 +16,14 @@ jobs:
       - run: pip install -r requirements_test.txt
       - name: Install the Bluetooth integration's own requirements (pinned by that HA version)
         run: |
-          python - <<'PY' > bt-requirements.txt
+          python - > bt-requirements.txt <<'PY'
           import json, pathlib, homeassistant.components as c
           root = pathlib.Path(c.__path__[0])
           for name in ("bluetooth", "bluetooth_adapters", "usb"):
-              print("
-".join(json.loads((root / name / "manifest.json").read_text()).get("requirements", [])))
+              for req in json.loads((root / name / "manifest.json").read_text()).get("requirements", []):
+                  print(req)
           PY
+          cat bt-requirements.txt
           pip install -r bt-requirements.txt
       - run: python -m pytest -q
       - name: core/ must not import Home Assistant
