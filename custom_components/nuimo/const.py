@@ -11,6 +11,9 @@ MANUFACTURER = "Senic"
 # Rotation steps are summed over this window before one ``rotate`` event fires.
 ROTATION_WINDOW_S = 0.08
 
+# How often to read the battery while connected.
+BATTERY_READ_S = 30 * 60
+
 # Wait between reconnect attempts, growing while the device stays away.
 RECONNECT_DELAYS_S = (2, 5, 10, 30, 60)
 

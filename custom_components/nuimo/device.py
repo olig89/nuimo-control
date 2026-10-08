@@ -9,12 +9,12 @@ from typing import Any
 
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
-from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
+from bleak_retry_connector import establish_connection
 
 from homeassistant.components import bluetooth
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 
-from .const import RECONNECT_DELAYS_S, ROTATION_WINDOW_S
+from .const import BATTERY_READ_S, RECONNECT_DELAYS_S, ROTATION_WINDOW_S
 from .core import protocol
 from .core.matrix import Matrix, encode
 from .core.rotation import RotationAccumulator
@@ -126,7 +126,7 @@ class NuimoDevice:
             started = self.hass.loop.time()
             try:
                 await self._connect(ble_device)
-                await self._disconnected.wait()
+                await self._stay_connected()
             except asyncio.CancelledError:
                 raise
             except Exception as err:  # noqa: BLE001 - any Bluetooth failure means retry
@@ -143,8 +143,11 @@ class NuimoDevice:
 
     async def _connect(self, ble_device: BLEDevice) -> None:
         self._disconnected.clear()
+        # Matches the 0.1.x setup, which received turns on firmware 2.5. 0.2.0/0.2.1 used
+        # BleakClientWithServiceCache, another subscription order and a battery subscription:
+        # the rotation subscription was accepted but no turn ever arrived.
         client = await establish_connection(
-            BleakClientWithServiceCache,
+            BleakClient,
             ble_device,
             f"Nuimo {self.address}",
             disconnected_callback=self._on_disconnected,
@@ -152,22 +155,16 @@ class NuimoDevice:
             max_attempts=3,
         )
         self._client = client
+        # Same order as Senic's own library and the 0.1.x integration, both proven on firmware 2.5.
         for uuid, handler in (
-            (protocol.BUTTON, self._on_button),
+            (protocol.FLY, self._on_fly),
             (protocol.TOUCH, self._on_touch),
             (protocol.ROTATION, self._on_rotation),
-            (protocol.FLY, self._on_fly),
+            (protocol.BUTTON, self._on_button),
         ):
             await client.start_notify(uuid, handler)
             _LOGGER.debug("Nuimo %s: notifications on for %s", self.address, uuid)
-        try:
-            await client.start_notify(protocol.BATTERY_LEVEL, self._on_battery)
-        except Exception:  # noqa: BLE001 - not every firmware notifies; read instead
-            _LOGGER.debug("Nuimo %s: battery notifications not available", self.address)
-        try:
-            self._set_battery(protocol.decode_battery(await client.read_gatt_char(protocol.BATTERY_LEVEL)))
-        except Exception:  # noqa: BLE001
-            _LOGGER.debug("Nuimo %s: could not read the battery", self.address)
+        await self._read_battery()
         if not self.info:
             for uuid, key in (
                 (protocol.MODEL, "model"),
@@ -181,6 +178,24 @@ class NuimoDevice:
         self.connected = True
         _LOGGER.info("Nuimo %s connected", self.address)
         self._state_changed()
+
+    async def _read_battery(self) -> None:
+        client = self._client
+        if client is None:
+            return
+        try:
+            self._set_battery(protocol.decode_battery(await client.read_gatt_char(protocol.BATTERY_LEVEL)))
+        except Exception:  # noqa: BLE001
+            _LOGGER.debug("Nuimo %s: could not read the battery", self.address)
+
+    async def _stay_connected(self) -> None:
+        """Wait for a disconnect, reading the battery now and then (it isn't subscribed)."""
+        while True:
+            try:
+                await asyncio.wait_for(self._disconnected.wait(), timeout=BATTERY_READ_S)
+                return
+            except TimeoutError:
+                await self._read_battery()
 
     @callback
     def _on_disconnected(self, _client: BleakClient) -> None:
@@ -234,10 +249,6 @@ class NuimoDevice:
         if batch := self._rotation.flush():
             self._emit(protocol.ROTATE, batch.as_event_data())
 
-    @callback
-    def _on_battery(self, _char: Any, data: bytearray) -> None:
-        _LOGGER.debug("Nuimo %s: battery %s", self.address, bytes(data).hex())
-        self._set_battery(protocol.decode_battery(data))
 
     @callback
     def _set_battery(self, value: int | None) -> None:

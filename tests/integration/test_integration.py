@@ -60,7 +60,7 @@ async def test_battery_and_connectivity(hass: HomeAssistant, nuimo):
     connect(nuimo)
     await hass.async_block_till_done()
     assert hass.states.get(CONNECTED).state == "on"
-    nuimo._on_battery(None, bytearray(b"\x40"))
+    nuimo._set_battery(64)
     await hass.async_block_till_done()
     assert hass.states.get(BATTERY).state == "64"
     # The event entity stays available while disconnected, so state triggers don't misfire.
