@@ -7,6 +7,7 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
+import bleak
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak_retry_connector import establish_connection
@@ -146,13 +147,14 @@ class NuimoDevice:
         # Matches the 0.1.x setup, which received turns on firmware 2.5. 0.2.0/0.2.1 used
         # BleakClientWithServiceCache, another subscription order and a battery subscription:
         # the rotation subscription was accepted but no turn ever arrived.
+        # bleak.BleakClient is looked up now, not at import, so it's Home Assistant's
+        # wrapper (installed when the bluetooth integration starts).
         client = await establish_connection(
-            BleakClient,
+            bleak.BleakClient,
             ble_device,
             f"Nuimo {self.address}",
             disconnected_callback=self._on_disconnected,
-            ble_device_callback=self._ble_device,
-            max_attempts=3,
+            max_attempts=2,
         )
         self._client = client
         # Same order as Senic's own library and the 0.1.x integration, both proven on firmware 2.5.
